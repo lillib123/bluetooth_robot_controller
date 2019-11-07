@@ -1,17 +1,21 @@
 package com.example.bluetoofrobitcontraller;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,17 +24,24 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
 
     BluetoothAdapter mBluetoothAdapter;
+    BluetoothSocket mBluetoothSocket = null;
     private static final int BT_ACTIVATE_REQUEST = 1;
+    private static final int BT_CONNECT_REQUEST = 2;
     private ListView list;
+    private Button connectButton;
     String selectedDeviceAddress;
+    boolean connection = false;
+    Vibrator v2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        v2 = (Vibrator) getSystemService(MainActivity.VIBRATOR_SERVICE);
 
 
         list = (ListView) findViewById(R.id.list);
+        connectButton = (Button) findViewById(R.id.button_connect);
 
         //prompt to turn bluetooth on if it is off
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -65,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
+                v2.vibrate(30);
                 // ListView Clicked item index
                 int itemPosition = position;
 
@@ -75,10 +86,32 @@ public class MainActivity extends AppCompatActivity {
 
                 // Show Alert with Address
                 Toast.makeText(getApplicationContext(),"Address: " + nameToAddress.get(itemValue), Toast.LENGTH_LONG).show();
-
             }
 
         });
-    }
 
+        connectButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v2.vibrate(60);
+                if (connection) {
+                    try {
+                        mBluetoothSocket.close();
+                        connection = true;
+                        connectButton.setText("uhhh connected?");
+
+                    } catch (IOException error) {
+                        Toast.makeText(getApplicationContext(), "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    try {
+                        //do the connecting
+                    } catch (Exception e) {
+                        Toast.makeText(getApplicationContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+
+            }
+        });
+    }
 }
