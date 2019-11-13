@@ -176,13 +176,34 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        rightButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectedThread.write("4");
+            }
+        });
+
+        leftButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectedThread.write("3");
+            }
+        });
+
         stopButton.setOnClickListener(new AdapterView.OnClickListener() {
             @Override
             public void onClick(View v) {
                 connectedThread.write("1"); //50
             }
-
         });
+
+        downButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectedThread.write("5");
+            }
+        });
+
         disconnectButton.setOnClickListener(new AdapterView.OnClickListener() {
             @Override
             public void onClick(View v) {
