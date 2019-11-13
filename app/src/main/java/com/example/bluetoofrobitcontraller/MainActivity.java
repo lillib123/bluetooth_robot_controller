@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private Button downButton;
     private Button stopButton;
     private Button disconnectButton;
+    private Button startWeaponButton;
+    private Button stopWeaponButton;
     String selectedDeviceAddress;
     boolean connection = false;
     private boolean registered = false;
@@ -68,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
         downButton = (Button) findViewById(R.id.button_down);
         stopButton = (Button) findViewById(R.id.button_stop);
         disconnectButton = (Button) findViewById(R.id.button_disconnect);
+        startWeaponButton = (Button) findViewById(R.id.button_weapon_on);
+        stopWeaponButton = (Button) findViewById(R.id.button_weapon_off);
 
         //prompt to turn bluetooth on if it is off
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -204,6 +208,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        startWeaponButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectedThread.write("6");
+            }
+        });
+
+        stopWeaponButton.setOnClickListener(new AdapterView.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectedThread.write("7");
+            }
+        });
+
         disconnectButton.setOnClickListener(new AdapterView.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -221,6 +240,8 @@ public class MainActivity extends AppCompatActivity {
             downButton.setVisibility(View.GONE);
             stopButton.setVisibility(View.GONE);
             disconnectButton.setVisibility(View.GONE);
+            startWeaponButton.setVisibility(View.GONE);
+            stopWeaponButton.setVisibility(View.GONE);
             list.setVisibility(View.VISIBLE);
         } else if (view == CONTROLLER) {
             connectButton.setVisibility(View.GONE);
@@ -230,6 +251,8 @@ public class MainActivity extends AppCompatActivity {
             downButton.setVisibility(View.VISIBLE);
             stopButton.setVisibility(View.VISIBLE);
             disconnectButton.setVisibility(View.VISIBLE);
+            startWeaponButton.setVisibility(View.VISIBLE);
+            stopWeaponButton.setVisibility(View.VISIBLE);
             list.setVisibility(View.GONE);
         }
     }
