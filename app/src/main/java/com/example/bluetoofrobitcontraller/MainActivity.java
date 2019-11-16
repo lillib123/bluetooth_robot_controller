@@ -11,11 +11,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,18 +44,19 @@ public class MainActivity extends AppCompatActivity {
     UUID SERIAL_UUID;
     private ListView list;
     private Button connectButton;
-    private Button goButton;
-    private Button leftButton;
-    private Button rightButton;
-    private Button downButton;
-    private Button stopButton;
+    private TextView positionText;
     private Button disconnectButton;
     private Button startWeaponButton;
     private Button stopWeaponButton;
+    private View trackView;
     String selectedDeviceAddress;
     boolean connection = false;
     private boolean registered = false;
     Vibrator v2;
+    private float viewCenterX;
+    private float viewCenterY;
+    private float currentDistanceX = 0;
+    private float currentDistanceY = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,23 +64,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         v2 = (Vibrator) getSystemService(MainActivity.VIBRATOR_SERVICE);
 
-
         list = (ListView) findViewById(R.id.list);
         connectButton = (Button) findViewById(R.id.button_connect);
-        goButton = (Button) findViewById(R.id.button_go);
-        rightButton = (Button) findViewById(R.id.button_right);
-        leftButton = (Button) findViewById(R.id.button_left);
-        downButton = (Button) findViewById(R.id.button_down);
-        stopButton = (Button) findViewById(R.id.button_stop);
+        positionText = (TextView) findViewById(R.id.position);
         disconnectButton = (Button) findViewById(R.id.button_disconnect);
         startWeaponButton = (Button) findViewById(R.id.button_weapon_on);
         stopWeaponButton = (Button) findViewById(R.id.button_weapon_off);
+        trackView = (View) findViewById(R.id.view);
 
-        //prompt to turn bluetooth on if it is off
+        getCenterOfView();
+
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         turnBluetoothOn();
 
-        //get list of connected devices
         final BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         final HashMap nameToAddress = new HashMap();
@@ -90,20 +89,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNameList);
-
-
-        // Assign adapter to ListView
         list.setAdapter(adapter);
-
-        // ListView Item Click Listener
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // ListView Clicked item index
                 int itemPosition = position;
 
-                // store clicked address
                 String  itemValue = (String) list.getItemAtPosition(position);
                 selectedDeviceAddress = nameToAddress.get(itemValue).toString();
             }
@@ -125,12 +117,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else {
                     try {
-                        //do the connecting
                         if (mBluetoothAdapter.isEnabled()) {
                             if (selectedDeviceAddress != null) {
                                 BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(selectedDeviceAddress);
 
-//                                UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"); // bluetooth serial port service
                                 SERIAL_UUID = device.getUuids()[0].getUuid(); //if you don't know the UUID of the bluetooth device service, you can get it like this from android cache
 
                                 BluetoothSocket socket = null;
@@ -145,20 +135,18 @@ public class MainActivity extends AppCompatActivity {
                                 try {
                                     socket.connect();
                                     Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_LONG).show();
-                                    Log.e("","Connected");
                                     showControlButtons(CONTROLLER);
                                 } catch (IOException e) {
-                                    Log.e("",e.getMessage());
+                                    Log.e("socket.connect()", e.getMessage());
                                     try {
                                         Log.e("","trying fallback...");
-                                        socket =(BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(device,1);
+                                        socket = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(device,1);
                                         socket.connect();
                                         Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_LONG).show();
-                                        Log.e("","Connected using fallback method");
                                         showControlButtons(CONTROLLER);
                                     } catch (Exception e2) {
                                         Toast.makeText(getApplicationContext(), "Cannot connect to this device", Toast.LENGTH_LONG).show();
-                                        Log.e("", "Couldn't establish Bluetooth connection!");
+                                        Log.e("fallback connect", "Couldn't establish Bluetooth connection!");
                                     }
                                 }
                             } else {
@@ -172,42 +160,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-        goButton.setOnClickListener(new AdapterView.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectedThread.write("2"); //49
-            }
-        });
-
-        rightButton.setOnClickListener(new AdapterView.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectedThread.write("4");
-            }
-        });
-
-        leftButton.setOnClickListener(new AdapterView.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectedThread.write("3");
-            }
-        });
-
-        stopButton.setOnClickListener(new AdapterView.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectedThread.write("1"); //50
-            }
-        });
-
-        downButton.setOnClickListener(new AdapterView.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectedThread.write("5");
-            }
-        });
-
 
         startWeaponButton.setOnClickListener(new AdapterView.OnClickListener() {
             @Override
@@ -229,31 +181,85 @@ public class MainActivity extends AppCompatActivity {
                 connectedThread.cancel();
             }
         });
+
+        trackView.setOnTouchListener(handleTouch);
+    }
+
+    private void getCenterOfView() {
+        viewCenterX = trackView.getX() + trackView.getWidth()  / 2;
+        viewCenterY = trackView.getY() + trackView.getHeight() / 2;
+    }
+
+    private View.OnTouchListener handleTouch = new View.OnTouchListener() {
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            getCenterOfView();
+
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    currentDistanceX = x - viewCenterX;
+                    currentDistanceY = y - viewCenterY;
+                    sendMovementSignal(currentDistanceX, currentDistanceY);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    currentDistanceX = x - viewCenterX;
+                    currentDistanceY = y - viewCenterY;
+                    sendMovementSignal(currentDistanceX, currentDistanceY);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    sendStopSignal();
+                    break;
+            }
+
+            return true;
+        }
+    };
+
+    private void sendMovementSignal(float currentDistanceX, float currentDistanceY) {
+        boolean xNegative = currentDistanceX > 0 ? false : true;
+        boolean yNegative = currentDistanceY < 0 ? false : true;
+
+        double theta = Math.toDegrees(Math.atan(Math.abs(currentDistanceX)/Math.abs(currentDistanceY)));
+
+        if (!yNegative && theta <= 45) {
+            positionText.setText("forward");
+            //TODO send forward signal
+        } else if (!xNegative && theta > 45) {
+            positionText.setText("right");
+            //TODO send right signal
+        } else if (yNegative && theta <= 45) {
+            positionText.setText("reverse");
+            //TODO send reverse signal
+        } else if (xNegative && theta > 45) {
+            positionText.setText("left");
+            //TODO send left signal
+        }
+    }
+
+    private void sendStopSignal() {
+        positionText.setText("stopped");
+        //TODO send stop signal
     }
 
     private void showControlButtons(String view) {
         if (view == DEVICES) {
             connectButton.setVisibility(View.VISIBLE);
-            goButton.setVisibility(View.GONE);
-            rightButton.setVisibility(View.GONE);
-            leftButton.setVisibility(View.GONE);
-            downButton.setVisibility(View.GONE);
-            stopButton.setVisibility(View.GONE);
             disconnectButton.setVisibility(View.GONE);
             startWeaponButton.setVisibility(View.GONE);
             stopWeaponButton.setVisibility(View.GONE);
             list.setVisibility(View.VISIBLE);
+            trackView.setVisibility(View.GONE);
         } else if (view == CONTROLLER) {
             connectButton.setVisibility(View.GONE);
-            goButton.setVisibility(View.VISIBLE);
-            rightButton.setVisibility(View.VISIBLE);
-            leftButton.setVisibility(View.VISIBLE);
-            downButton.setVisibility(View.VISIBLE);
-            stopButton.setVisibility(View.VISIBLE);
             disconnectButton.setVisibility(View.VISIBLE);
             startWeaponButton.setVisibility(View.VISIBLE);
             stopWeaponButton.setVisibility(View.VISIBLE);
             list.setVisibility(View.GONE);
+            trackView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -292,9 +298,6 @@ public class MainActivity extends AppCompatActivity {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
-
-            // Get the input and output streams, using temp objects because
-            // member streams are final
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
@@ -304,34 +307,10 @@ public class MainActivity extends AppCompatActivity {
             mmOutStream = tmpOut;
         }
 
-        public void run() {
-
-            byte[] buffer = new byte[1024];  // buffer store for the stream
-            int bytes; // bytes returned from read()
-
-
-            // Keep listening to the InputStream until an exception occurs
-            while (true) {
-                try {
-                    // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
-
-                    String data = new String(buffer, 0 , bytes);
-
-                    // Send the obtained bytes to the UI activity
-                    mHandler.obtainMessage(MESSAGE_READ, bytes, -1, data).sendToTarget();
-                } catch (IOException e) {
-                    break;
-                }
-            }
-        }
-
-        /* Call this from the main activity to send data to the remote device */
         public void write(String message) {
             byte[] msgBuffer = message.getBytes();
             try {
                 mmOutStream.write(msgBuffer);
-                Log.e("write()","Writing: " + msgBuffer);
             } catch (IOException e) {
                 Log.e("write()","Error writing: " + e.getMessage());
             }
