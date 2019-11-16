@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                             if (selectedDeviceAddress != null) {
                                 BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(selectedDeviceAddress);
 
-                                SERIAL_UUID = device.getUuids()[0].getUuid(); //if you don't know the UUID of the bluetooth device service, you can get it like this from android cache
+                                SERIAL_UUID = device.getUuids()[0].getUuid();
 
                                 BluetoothSocket socket = null;
 
@@ -227,22 +227,22 @@ public class MainActivity extends AppCompatActivity {
 
         if (!yNegative && theta <= 45) {
             positionText.setText("forward");
-            //TODO send forward signal
+            connectedThread.write("1");
         } else if (!xNegative && theta > 45) {
             positionText.setText("right");
-            //TODO send right signal
+            connectedThread.write("2");
         } else if (yNegative && theta <= 45) {
             positionText.setText("reverse");
-            //TODO send reverse signal
+            connectedThread.write("3");
         } else if (xNegative && theta > 45) {
             positionText.setText("left");
-            //TODO send left signal
+            connectedThread.write("4");
         }
     }
 
     private void sendStopSignal() {
         positionText.setText("stopped");
-        //TODO send stop signal
+        connectedThread.write("5");
     }
 
     private void showControlButtons(String view) {
@@ -280,7 +280,6 @@ public class MainActivity extends AppCompatActivity {
             case BT_ACTIVATE_REQUEST:
                 if (resultCode == Activity.RESULT_OK) {
                     Toast.makeText(getApplicationContext(), "bluetooth activated", Toast.LENGTH_LONG).show();
-                    //***
 
                 } else {
                     Toast.makeText(getApplicationContext(), "bluetooth not activated", Toast.LENGTH_LONG).show();
