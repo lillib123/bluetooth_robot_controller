@@ -35,6 +35,10 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String DEVICES = "devices";
     public static final String CONTROLLER = "controller";
+    public static final String FORWARD = "forward";
+    public static final String RIGHT = "right";
+    public static final String REVERSE = "reverse";
+    public static final String LEFT = "left";
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket mBluetoothSocket;
     ConnectedThread connectedThread;
@@ -57,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private float viewCenterY;
     private float currentDistanceX = 0;
     private float currentDistanceY = 0;
+    String currentMovement = "stopped";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,23 +225,28 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void sendMovementSignal(float currentDistanceX, float currentDistanceY) {
+
         boolean xNegative = currentDistanceX > 0 ? false : true;
         boolean yNegative = currentDistanceY < 0 ? false : true;
 
         double theta = Math.toDegrees(Math.atan(Math.abs(currentDistanceX)/Math.abs(currentDistanceY)));
 
-        if (!yNegative && theta <= 45) {
-            positionText.setText("forward");
+        if (!yNegative && theta <= 45 && currentMovement != FORWARD) {
+            positionText.setText(FORWARD);
             connectedThread.write("1");
-        } else if (!xNegative && theta > 45) {
-            positionText.setText("right");
+            currentMovement = FORWARD;
+        } else if (!xNegative && theta > 45 && currentMovement != RIGHT) {
+            positionText.setText(RIGHT);
             connectedThread.write("2");
-        } else if (yNegative && theta <= 45) {
-            positionText.setText("reverse");
+            currentMovement = RIGHT;
+        } else if (yNegative && theta <= 45 && currentMovement != REVERSE) {
+            positionText.setText(REVERSE);
             connectedThread.write("3");
-        } else if (xNegative && theta > 45) {
-            positionText.setText("left");
+            currentMovement = REVERSE;
+        } else if (xNegative && theta > 45 && currentMovement != LEFT) {
+            positionText.setText(LEFT);
             connectedThread.write("4");
+            currentMovement = LEFT;
         }
     }
 
