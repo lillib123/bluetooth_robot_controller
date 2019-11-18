@@ -189,42 +189,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getCenterOfView() {
-        viewCenterX = trackView.getX() + trackView.getWidth()  / 2;
-        viewCenterY = trackView.getY() + trackView.getHeight() / 2;
+        try {
+            viewCenterX = trackView.getX() + trackView.getWidth()  / 2;
+            viewCenterY = trackView.getY() + trackView.getHeight() / 2;
+        } catch (Exception e) {
+            Log.e("getX and getY", "could not get screen coordinates: " + e.getMessage());
+        }
+
     }
 
     private View.OnTouchListener handleTouch = new View.OnTouchListener() {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            getCenterOfView();
-            int x = 0;
-            int y = 0;
+        getCenterOfView();
 
-            try {
-                x = (int) event.getX();
-                y = (int) event.getY();
-            } catch (Exception e) {
-                Log.e("getX and getY", "could not get screen coordinates: " + e.getMessage());
-            }
+        int x = (int) event.getX();
+        int y = (int) event.getY();
 
-            if (x != 0 && y != 0) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        currentDistanceX = x - viewCenterX;
-                        currentDistanceY = y - viewCenterY;
-                        sendMovementSignal(currentDistanceX, currentDistanceY);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        currentDistanceX = x - viewCenterX;
-                        currentDistanceY = y - viewCenterY;
-                        sendMovementSignal(currentDistanceX, currentDistanceY);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        sendStopSignal();
-                        break;
-                }
+        if (viewCenterX != 0 && viewCenterY != 0) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    currentDistanceX = x - viewCenterX;
+                    currentDistanceY = y - viewCenterY;
+                    sendMovementSignal(currentDistanceX, currentDistanceY);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    currentDistanceX = x - viewCenterX;
+                    currentDistanceY = y - viewCenterY;
+                    sendMovementSignal(currentDistanceX, currentDistanceY);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    sendStopSignal();
+                    break;
             }
+        }
 
             return true;
         }
