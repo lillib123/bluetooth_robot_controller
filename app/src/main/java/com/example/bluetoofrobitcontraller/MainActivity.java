@@ -17,7 +17,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String RIGHT = "right";
     public static final String REVERSE = "reverse";
     public static final String LEFT = "left";
+    public static final String STOP = "stop";
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket mBluetoothSocket;
     ConnectedThread connectedThread;
@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
     UUID SERIAL_UUID;
     private ListView list;
     private Button connectButton;
-    private TextView positionText;
     private Button disconnectButton;
     private Button startWeaponButton;
     private Button stopWeaponButton;
@@ -71,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
 
         list = (ListView) findViewById(R.id.list);
         connectButton = (Button) findViewById(R.id.button_connect);
-        positionText = (TextView) findViewById(R.id.position);
         disconnectButton = (Button) findViewById(R.id.button_disconnect);
         startWeaponButton = (Button) findViewById(R.id.button_weapon_on);
         stopWeaponButton = (Button) findViewById(R.id.button_weapon_off);
@@ -200,24 +198,32 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             getCenterOfView();
+            int x = 0;
+            int y = 0;
 
-            int x = (int) event.getX();
-            int y = (int) event.getY();
+            try {
+                x = (int) event.getX();
+                y = (int) event.getY();
+            } catch (Exception e) {
+                Log.e("getX and getY", "could not get screen coordinates: " + e.getMessage());
+            }
 
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    currentDistanceX = x - viewCenterX;
-                    currentDistanceY = y - viewCenterY;
-                    sendMovementSignal(currentDistanceX, currentDistanceY);
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    currentDistanceX = x - viewCenterX;
-                    currentDistanceY = y - viewCenterY;
-                    sendMovementSignal(currentDistanceX, currentDistanceY);
-                    break;
-                case MotionEvent.ACTION_UP:
-                    sendStopSignal();
-                    break;
+            if (x != 0 && y != 0) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        currentDistanceX = x - viewCenterX;
+                        currentDistanceY = y - viewCenterY;
+                        sendMovementSignal(currentDistanceX, currentDistanceY);
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        currentDistanceX = x - viewCenterX;
+                        currentDistanceY = y - viewCenterY;
+                        sendMovementSignal(currentDistanceX, currentDistanceY);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        sendStopSignal();
+                        break;
+                }
             }
 
             return true;
@@ -232,26 +238,27 @@ public class MainActivity extends AppCompatActivity {
         double theta = Math.toDegrees(Math.atan(Math.abs(currentDistanceX)/Math.abs(currentDistanceY)));
 
         if (!yNegative && theta <= 45 && currentMovement != FORWARD) {
-            positionText.setText(FORWARD);
+            trackView.setBackgroundResource(R.drawable.uparrow);
             connectedThread.write("1");
             currentMovement = FORWARD;
         } else if (!xNegative && theta > 45 && currentMovement != RIGHT) {
-            positionText.setText(RIGHT);
+            trackView.setBackgroundResource(R.drawable.rightarrow);
             connectedThread.write("2");
             currentMovement = RIGHT;
         } else if (yNegative && theta <= 45 && currentMovement != REVERSE) {
-            positionText.setText(REVERSE);
+            trackView.setBackgroundResource(R.drawable.downarrow);
             connectedThread.write("3");
             currentMovement = REVERSE;
         } else if (xNegative && theta > 45 && currentMovement != LEFT) {
-            positionText.setText(LEFT);
+            trackView.setBackgroundResource(R.drawable.leftarrow);
             connectedThread.write("4");
             currentMovement = LEFT;
         }
     }
 
     private void sendStopSignal() {
-        positionText.setText("stopped");
+        trackView.setBackgroundResource(R.drawable.circle);
+        currentMovement = STOP;
         connectedThread.write("5");
     }
 
