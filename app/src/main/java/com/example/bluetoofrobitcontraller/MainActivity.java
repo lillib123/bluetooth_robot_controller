@@ -31,8 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private ConnectedThread connectedThread;
     private String selectedDeviceAddress;
     private Vibrator v2;
-    private float currentDistanceX = 0;
-    private float currentDistanceY = 0;
     private String currentMovement = "stopped";
     private HashMap nameToAddress = new HashMap();
 
@@ -45,9 +43,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         v2 = (Vibrator) getSystemService(MainActivity.VIBRATOR_SERVICE);
         list = (ListView) findViewById(R.id.list);
         connectButton = (Button) findViewById(R.id.button_connect);
@@ -56,13 +54,13 @@ public class MainActivity extends AppCompatActivity {
         stopWeaponButton = (Button) findViewById(R.id.button_weapon_off);
         trackView = (View) findViewById(R.id.view);
 
-        getCenterOfView();
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        getCenterOfView();
         turnBluetoothOn();
         getBondedDevices();
 
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String  itemValue = (String) list.getItemAtPosition(position);
@@ -160,6 +158,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+        float currentDistanceX;
+        float currentDistanceY;
         List<Float> centerCoordinates = getCenterOfView();
         Float viewCenterX = centerCoordinates.get(0);
         Float viewCenterY = centerCoordinates.get(1);
@@ -222,24 +222,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendStopSignal() {
         trackView.setBackgroundResource(R.drawable.circle);
-        currentMovement = "stop";
         connectedThread.write("5");
     }
 
     public void showControlButtons(String view) {
         if (view == "devices") {
             connectButton.setVisibility(View.VISIBLE);
-            disconnectButton.setVisibility(View.GONE);
-            startWeaponButton.setVisibility(View.GONE);
-            stopWeaponButton.setVisibility(View.GONE);
+            disconnectButton.setVisibility(View.INVISIBLE);
+            startWeaponButton.setVisibility(View.INVISIBLE);
+            stopWeaponButton.setVisibility(View.INVISIBLE);
             list.setVisibility(View.VISIBLE);
-            trackView.setVisibility(View.GONE);
+            trackView.setVisibility(View.INVISIBLE);
         } else if (view == CONTROLLER) {
-            connectButton.setVisibility(View.GONE);
+            connectButton.setVisibility(View.INVISIBLE);
             disconnectButton.setVisibility(View.VISIBLE);
             startWeaponButton.setVisibility(View.VISIBLE);
             stopWeaponButton.setVisibility(View.VISIBLE);
-            list.setVisibility(View.GONE);
+            list.setVisibility(View.INVISIBLE);
             trackView.setVisibility(View.VISIBLE);
         }
     }
