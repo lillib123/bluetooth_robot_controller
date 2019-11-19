@@ -4,11 +4,8 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -20,48 +17,31 @@ import android.widget.ListView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
-
-    public static final String DEVICES = "devices";
     public static final String CONTROLLER = "controller";
-    public static final String FORWARD = "forward";
-    public static final String RIGHT = "right";
-    public static final String REVERSE = "reverse";
-    public static final String LEFT = "left";
-    public static final String STOP = "stop";
-    BluetoothAdapter mBluetoothAdapter;
-    BluetoothSocket mBluetoothSocket;
-    ConnectedThread connectedThread;
-    private Handler mHandler;
     private static final int BT_ACTIVATE_REQUEST = 1;
-    private static final int MESSAGE_READ = 3;
-    UUID SERIAL_UUID;
+    private BluetoothAdapter mBluetoothAdapter;
+    private ConnectedThread connectedThread;
+    private String selectedDeviceAddress;
+    private Vibrator v2;
+    private float currentDistanceX = 0;
+    private float currentDistanceY = 0;
+    private String currentMovement = "stopped";
+    private HashMap nameToAddress = new HashMap();
+
     private ListView list;
     private Button connectButton;
     private Button disconnectButton;
     private Button startWeaponButton;
     private Button stopWeaponButton;
     private View trackView;
-    String selectedDeviceAddress;
-    boolean connection = false;
-    private boolean registered = false;
-    Vibrator v2;
-    private float viewCenterX;
-    private float viewCenterY;
-    private float currentDistanceX = 0;
-    private float currentDistanceY = 0;
-    String currentMovement = "stopped";
-    private HashMap nameToAddress = new HashMap();
-    List<String> deviceNameList = new ArrayList<>();
-    Set<BluetoothDevice> pairedDevices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                int itemPosition = position;
-
                 String  itemValue = (String) list.getItemAtPosition(position);
                 selectedDeviceAddress = nameToAddress.get(itemValue).toString();
             }
@@ -97,56 +75,35 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v2.vibrate(60);
-                if (connection) {
-                    try {
-                        mBluetoothSocket.close();
-                        connection = false;
-                        Toast.makeText(getApplicationContext(), "already connected to a device", Toast.LENGTH_LONG).show();
+                try {
+                    if (mBluetoothAdapter.isEnabled()) {
+                        if (selectedDeviceAddress != null) {
+                            BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(selectedDeviceAddress);
+                            UUID SERIAL_UUID = device.getUuids()[0].getUuid();
+                            BluetoothSocket socket = device.createRfcommSocketToServiceRecord(SERIAL_UUID);
+                            connectedThread = new ConnectedThread(MainActivity.this, socket);
 
-                    } catch (IOException error) {
-                        Toast.makeText(getApplicationContext(), "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    try {
-                        if (mBluetoothAdapter.isEnabled()) {
-                            if (selectedDeviceAddress != null) {
-                                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(selectedDeviceAddress);
-
-                                SERIAL_UUID = device.getUuids()[0].getUuid();
-
-                                BluetoothSocket socket = null;
-
+                            try {
+                                socket.connect();
+                                Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_LONG).show();
+                                showControlButtons(CONTROLLER);
+                            } catch (IOException e) {
+                                Log.e("socket.connect()", "failed to connect: " + e.getMessage());
                                 try {
-                                    socket = device.createRfcommSocketToServiceRecord(SERIAL_UUID);
-                                    connectedThread = new ConnectedThread(socket);
-                                } catch (Exception e) {
-                                    Log.e("","Error creating socket");
-                                }
-
-                                try {
+                                    Log.e("","trying fallback...");
+                                    socket = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(device,1);
                                     socket.connect();
                                     Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_LONG).show();
                                     showControlButtons(CONTROLLER);
-                                } catch (IOException e) {
-                                    Log.e("socket.connect()", e.getMessage());
-                                    try {
-                                        Log.e("","trying fallback...");
-                                        socket = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(device,1);
-                                        socket.connect();
-                                        Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_LONG).show();
-                                        showControlButtons(CONTROLLER);
-                                    } catch (Exception e2) {
-                                        Toast.makeText(getApplicationContext(), "Cannot connect to this device", Toast.LENGTH_LONG).show();
-                                        Log.e("fallback connect", "Couldn't establish Bluetooth connection!");
-                                    }
+                                } catch (Exception e2) {
+                                    Toast.makeText(getApplicationContext(), "Cannot connect to this device", Toast.LENGTH_LONG).show();
+                                    Log.e("fallback connect", "Couldn't establish Bluetooth connection!");
                                 }
-                            } else {
-                                Log.e("","BT device not selected");
                             }
                         }
-                    } catch (Exception e) {
-                        Toast.makeText(getApplicationContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
 
             }
@@ -177,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getBondedDevices() {
+        List<String> deviceNameList = new ArrayList<>();
+        Set<BluetoothDevice> pairedDevices;
         pairedDevices = mBluetoothAdapter.getBondedDevices();
         for(BluetoothDevice device : pairedDevices) {
             deviceNameList.add(device.getName());
@@ -187,21 +146,23 @@ public class MainActivity extends AppCompatActivity {
         list.setAdapter(adapter);
     }
 
-    private void getCenterOfView() {
+    private List<Float> getCenterOfView() {
+        List<Float> center = null;
         try {
-            viewCenterX = trackView.getX() + trackView.getWidth()  / 2;
-            viewCenterY = trackView.getY() + trackView.getHeight() / 2;
+            center = Arrays.asList(trackView.getX() + trackView.getWidth()  / 2, trackView.getY() + trackView.getHeight() / 2);
         } catch (Exception e) {
             Log.e("getX and getY", "could not get screen coordinates: " + e.getMessage());
         }
-
+        return center;
     }
 
     private View.OnTouchListener handleTouch = new View.OnTouchListener() {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-        getCenterOfView();
+        List<Float> centerCoordinates = getCenterOfView();
+        Float viewCenterX = centerCoordinates.get(0);
+        Float viewCenterY = centerCoordinates.get(1);
 
         int x = (int) event.getX();
         int y = (int) event.getY();
@@ -230,6 +191,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendMovementSignal(float currentDistanceX, float currentDistanceY) {
 
+        String FORWARD = "forward";
+        String RIGHT = "right";
+        String REVERSE = "reverse";
+        String LEFT = "left";
+
         boolean xNegative = currentDistanceX > 0 ? false : true;
         boolean yNegative = currentDistanceY < 0 ? false : true;
 
@@ -256,12 +222,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendStopSignal() {
         trackView.setBackgroundResource(R.drawable.circle);
-        currentMovement = STOP;
+        currentMovement = "stop";
         connectedThread.write("5");
     }
 
-    private void showControlButtons(String view) {
-        if (view == DEVICES) {
+    public void showControlButtons(String view) {
+        if (view == "devices") {
             connectButton.setVisibility(View.VISIBLE);
             disconnectButton.setVisibility(View.GONE);
             startWeaponButton.setVisibility(View.GONE);
@@ -295,81 +261,13 @@ public class MainActivity extends AppCompatActivity {
             case BT_ACTIVATE_REQUEST:
                 if (resultCode == Activity.RESULT_OK) {
                     getBondedDevices();
-                    Toast.makeText(getApplicationContext(), "bluetooth activated", Toast.LENGTH_LONG).show();
 
                 } else {
-                    Toast.makeText(getApplicationContext(), "bluetooth not activated", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "bluetooth was not activated", Toast.LENGTH_LONG).show();
                     finish();
                 }
         }
     }
 
-    private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) { }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        public void write(String message) {
-            byte[] msgBuffer = message.getBytes();
-            try {
-                mmOutStream.write(msgBuffer);
-            } catch (IOException e) {
-                Log.e("write()","Error writing: " + e.getMessage());
-            }
-        }
-
-        public void cancel() {
-            try {
-                mmSocket.close();
-                showControlButtons(DEVICES);
-                Toast.makeText(getApplicationContext(), "Successfully disconnected", Toast.LENGTH_LONG).show();
-            } catch (IOException e) {
-                Log.e("cancel()","Error disconnecting: " + e.getMessage());
-            }
-        }
-        private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-
-                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
-                    final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-                    Intent intent1 = new Intent(MainActivity.this, MainActivity.class);
-
-                    switch (state) {
-                        case BluetoothAdapter.STATE_OFF:
-                            if(registered) {
-                                unregisterReceiver(mReceiver);
-                                registered=false;
-                            }
-                            startActivity(intent1);
-                            finish();
-                            break;
-                        case BluetoothAdapter.STATE_TURNING_OFF:
-                            if(registered) {
-                                unregisterReceiver(mReceiver);
-                                registered=false;
-                            }
-                            startActivity(intent1);
-                            finish();
-                            break;
-                    }
-                }
-            }
-        };
-    }
 }
 
