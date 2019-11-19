@@ -24,8 +24,7 @@
 
     <Button
         android:id="@+id/button_connect"
-        android:background="@color/colorConnect"
-        android:textColor="@color/colorWhite"
+        android:background="@drawable/custombutton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -40,28 +39,39 @@
 
     <Button
         android:id="@+id/button_disconnect"
-        android:background="@color/colorBlack"
-        android:textColor="@color/colorWhite"
-        android:layout_width="wrap_content"
+        android:visibility="invisible"
+        android:layout_width="105dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginBottom="32dp"
+        android:background="@drawable/custombutton"
         android:text="DISCONNECT"
-        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintHorizontal_bias="0.044"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/button_weapon_on"
-        android:background="@color/colorWeaponOn"
-        android:textColor="@color/colorWhite"
+        android:id="@+id/button_weapon_off"
+        android:layout_width="105dp"
         android:visibility="invisible"
-        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/custombutton"
+        android:text="WEAPON OFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/button_weapon_on"
+        android:background="@drawable/custombutton"
+        android:visibility="invisible"
+        android:layout_width="105dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="20dp"
         android:layout_marginRight="20dp"
@@ -69,24 +79,6 @@
         android:text="WEAPON ON"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
-    <Button
-        android:id="@+id/button_weapon_off"
-        android:background="@color/colorWeaponOff"
-        android:textColor="@color/colorWhite"
-        android:visibility="invisible"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginBottom="32dp"
-        android:text="WEAPON OFF"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/button_weapon_on"
-        app:layout_constraintHorizontal_bias="0.087"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/group"

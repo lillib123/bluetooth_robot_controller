@@ -110,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 connectedThread.write("6");
+                stopWeaponButton.setVisibility(View.VISIBLE);
+                startWeaponButton.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -117,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 connectedThread.write("7");
+                stopWeaponButton.setVisibility(View.INVISIBLE);
+                startWeaponButton.setVisibility(View.VISIBLE);
             }
         });
 
@@ -218,15 +222,15 @@ public class MainActivity extends AppCompatActivity {
         if (view == "devices") {
             connectButton.setVisibility(View.VISIBLE);
             disconnectButton.setVisibility(View.INVISIBLE);
-            startWeaponButton.setVisibility(View.INVISIBLE);
             stopWeaponButton.setVisibility(View.INVISIBLE);
+            startWeaponButton.setVisibility(View.INVISIBLE);
             list.setVisibility(View.VISIBLE);
             trackView.setVisibility(View.INVISIBLE);
         } else if (view == CONTROLLER) {
             connectButton.setVisibility(View.INVISIBLE);
             disconnectButton.setVisibility(View.VISIBLE);
-            startWeaponButton.setVisibility(View.VISIBLE);
             stopWeaponButton.setVisibility(View.VISIBLE);
+            startWeaponButton.setVisibility(View.VISIBLE);
             list.setVisibility(View.INVISIBLE);
             trackView.setVisibility(View.VISIBLE);
         }
