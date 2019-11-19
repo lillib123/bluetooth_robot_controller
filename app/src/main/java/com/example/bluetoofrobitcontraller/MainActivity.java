@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private ConnectedThread connectedThread;
     private String selectedDeviceAddress;
     private Vibrator v2;
-    private String currentMovement = "stopped";
     private HashMap nameToAddress = new HashMap();
 
     private ListView list;
@@ -190,33 +189,23 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void sendMovementSignal(float currentDistanceX, float currentDistanceY) {
-
-        String FORWARD = "forward";
-        String RIGHT = "right";
-        String REVERSE = "reverse";
-        String LEFT = "left";
-
-        boolean xNegative = currentDistanceX > 0 ? false : true;
-        boolean yNegative = currentDistanceY < 0 ? false : true;
+        boolean xNegative = currentDistanceX <= 0;
+        boolean yNegative = currentDistanceY <= 0;
 
         double theta = Math.toDegrees(Math.atan(Math.abs(currentDistanceX)/Math.abs(currentDistanceY)));
 
-        if (!yNegative && theta <= 45 && currentMovement != FORWARD) {
+        if (yNegative && theta <= 45) {
             trackView.setBackgroundResource(R.drawable.uparrow);
             connectedThread.write("1");
-            currentMovement = FORWARD;
-        } else if (!xNegative && theta > 45 && currentMovement != RIGHT) {
+        } else if (!xNegative && theta > 45) {
             trackView.setBackgroundResource(R.drawable.rightarrow);
             connectedThread.write("2");
-            currentMovement = RIGHT;
-        } else if (yNegative && theta <= 45 && currentMovement != REVERSE) {
+        } else if (!yNegative && theta <= 45) {
             trackView.setBackgroundResource(R.drawable.downarrow);
             connectedThread.write("3");
-            currentMovement = REVERSE;
-        } else if (xNegative && theta > 45 && currentMovement != LEFT) {
+        } else if (xNegative && theta > 45) {
             trackView.setBackgroundResource(R.drawable.leftarrow);
             connectedThread.write("4");
-            currentMovement = LEFT;
         }
     }
 
