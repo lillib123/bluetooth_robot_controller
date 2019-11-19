@@ -18,9 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -61,13 +59,16 @@ public class MainActivity extends AppCompatActivity {
     private float currentDistanceX = 0;
     private float currentDistanceY = 0;
     String currentMovement = "stopped";
+    private HashMap nameToAddress = new HashMap();
+    List<String> deviceNameList = new ArrayList<>();
+    Set<BluetoothDevice> pairedDevices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         v2 = (Vibrator) getSystemService(MainActivity.VIBRATOR_SERVICE);
-
         list = (ListView) findViewById(R.id.list);
         connectButton = (Button) findViewById(R.id.button_connect);
         disconnectButton = (Button) findViewById(R.id.button_disconnect);
@@ -76,23 +77,10 @@ public class MainActivity extends AppCompatActivity {
         trackView = (View) findViewById(R.id.view);
 
         getCenterOfView();
-
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         turnBluetoothOn();
+        getBondedDevices();
 
-        final BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        final HashMap nameToAddress = new HashMap();
-
-        List<String> deviceNameList = new ArrayList<>();
-
-        for(BluetoothDevice device : pairedDevices) {
-            deviceNameList.add(device.getName());
-            nameToAddress.put(device.getName(), device.getAddress());
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNameList);
-        list.setAdapter(adapter);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -186,6 +174,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         trackView.setOnTouchListener(handleTouch);
+    }
+
+    private void getBondedDevices() {
+        pairedDevices = mBluetoothAdapter.getBondedDevices();
+        for(BluetoothDevice device : pairedDevices) {
+            deviceNameList.add(device.getName());
+            nameToAddress.put(device.getName(), device.getAddress());
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNameList);
+        list.setAdapter(adapter);
     }
 
     private void getCenterOfView() {
@@ -295,6 +294,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case BT_ACTIVATE_REQUEST:
                 if (resultCode == Activity.RESULT_OK) {
+                    getBondedDevices();
                     Toast.makeText(getApplicationContext(), "bluetooth activated", Toast.LENGTH_LONG).show();
 
                 } else {
