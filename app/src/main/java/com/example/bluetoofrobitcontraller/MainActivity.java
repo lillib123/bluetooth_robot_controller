@@ -26,6 +26,7 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     public static final String CONTROLLER = "controller";
+    private Movements currentMovement = Movements.STOP;
     private static final int BT_ACTIVATE_REQUEST = 1;
     private BluetoothAdapter mBluetoothAdapter;
     private ConnectedThread connectedThread;
@@ -134,6 +135,8 @@ public class MainActivity extends AppCompatActivity {
         trackView.setOnTouchListener(handleTouch);
     }
 
+
+
     private void getBondedDevices() {
         List<String> deviceNameList = new ArrayList<>();
         Set<BluetoothDevice> pairedDevices;
@@ -200,21 +203,34 @@ public class MainActivity extends AppCompatActivity {
 
         if (yNegative && theta <= 45) {
             trackView.setBackgroundResource(R.drawable.uparrow);
-            connectedThread.write("1");
+            if (currentMovement != Movements.FORWARD) {
+                connectedThread.write("1");
+                currentMovement = Movements.FORWARD;
+            }
         } else if (!xNegative && theta > 45) {
             trackView.setBackgroundResource(R.drawable.rightarrow);
-            connectedThread.write("2");
+            if (currentMovement != Movements.RIGHT) {
+                connectedThread.write("2");
+                currentMovement = Movements.RIGHT;
+            }
         } else if (!yNegative && theta <= 45) {
             trackView.setBackgroundResource(R.drawable.downarrow);
-            connectedThread.write("3");
+            if (currentMovement != Movements.REVERSE) {
+                connectedThread.write("3");
+                currentMovement = Movements.REVERSE;
+            }
         } else if (xNegative && theta > 45) {
             trackView.setBackgroundResource(R.drawable.leftarrow);
-            connectedThread.write("4");
+            if (currentMovement != Movements.LEFT) {
+                connectedThread.write("4");
+                currentMovement = Movements.LEFT;
+            }
         }
     }
 
     private void sendStopSignal() {
         trackView.setBackgroundResource(R.drawable.circle);
+        currentMovement = Movements.STOP;
         connectedThread.write("5");
     }
 
